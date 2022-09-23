@@ -43,7 +43,7 @@ function Layout(props) {
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: "center" }}>
       <Typography variant="h6" sx={{ my: 2 }}>
-        <img src="/itransition.jpeg" /> Itransition
+        <img src="/itransition.jpeg" alt="logo" /> Itransition
       </Typography>
       <Divider />
       <List>
@@ -91,6 +91,7 @@ function Layout(props) {
             <img
               src="/itransition.jpeg"
               style={{ width: "30px", marginRight: "5px" }}
+              alt="logo"
             />
             Itransition
           </Typography>
