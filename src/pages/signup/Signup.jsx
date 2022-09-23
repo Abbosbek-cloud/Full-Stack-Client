@@ -25,7 +25,6 @@ const Signup = () => {
     await axios({
       url: `${BASE_URL}/users/signUp`,
       method: "post",
-      headers: {},
       data,
     })
       .then((res) => {
