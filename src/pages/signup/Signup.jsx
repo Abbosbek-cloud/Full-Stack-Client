@@ -3,8 +3,11 @@ import { useState } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import axios from "axios";
 import { BASE_URL } from "../../constants/constants";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Signup = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState({
     name: "",
     email: "",
@@ -20,6 +23,11 @@ const Signup = () => {
     });
   };
 
+  const handleEnter = (token) => {
+    localStorage.setItem("token", token);
+    navigate("/");
+  };
+
   const handleLog = async (e) => {
     e.preventDefault();
     await axios({
@@ -28,10 +36,10 @@ const Signup = () => {
       data,
     })
       .then((res) => {
-        console.log(res);
+        handleEnter(res.data.token);
       })
       .catch((err) => {
-        console.log(err);
+        toast.error("Error occured, please retry!");
       });
   };
 
