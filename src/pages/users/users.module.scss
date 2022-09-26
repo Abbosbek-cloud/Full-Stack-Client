@@ -1,0 +1,74 @@
+h3 {
+  margin: 0;
+}
+
+.tableHeader {
+  display: flex;
+  justify-content: space-between;
+  .selectAll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: blueviolet;
+    color: #fff;
+    padding: 10px;
+    flex: 1;
+    &:last-child {
+      border-left: 1px solid #fff;
+    }
+    &:first-child {
+      border-right: 1px solid #fff;
+    }
+    #selectUsers {
+      height: 30px;
+      width: 30px;
+    }
+  }
+}
+
+.tableBody {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid blueviolet;
+
+  .selectAll {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fff;
+    color: blueviolet;
+    padding: 10px;
+    flex: 1;
+    &:last-child {
+      border-left: 1px solid blueviolet;
+    }
+    &:first-child {
+      border-right: 1px solid blueviolet;
+    }
+    .status {
+      padding: 5px;
+      border-radius: 3px;
+    }
+    .active {
+      color: rgb(68, 123, 68);
+      background-color: rgb(155, 194, 155);
+    }
+    .block {
+      color: rgb(212, 10, 10);
+      background-color: rgb(211, 139, 139);
+    }
+    .buttons {
+      max-width: 40px;
+      min-width: 40px;
+      max-height: 40px;
+      min-height: 40px;
+      border-radius: 50%;
+    }
+  }
+  .btnWrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+  }
+}

@@ -5,95 +5,14 @@ import axios from "axios";
 import { BASE_URL } from "../../constants/constants";
 import { format } from "date-fns";
 import en from "date-fns/locale/en-GB";
-import { Button } from "@mui/material";
+import { Button, Checkbox, Container } from "@mui/material";
 import HttpsIcon from "@mui/icons-material/Https";
 import NoEncryptionIcon from "@mui/icons-material/NoEncryption";
 import DeleteIcon from "@mui/icons-material/Delete";
-import styled from "@emotion/styled";
-
-const CustomButton = styled(Button)({
-  "&": {
-    padding: 0,
-    maxWidth: "30px",
-    maxHeight: "30px",
-    minWidth: "30px",
-    minHeight: "30px",
-    borderRadius: "50%",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
-
-const columns = [
-  { field: "id", headerName: "ID", width: 60 },
-  {
-    field: "name",
-    headerName: "Name",
-    width: 150,
-    editable: true,
-  },
-  {
-    field: "email",
-    headerName: "Email",
-    width: 250,
-    editable: true,
-  },
-  {
-    field: "lastLog",
-    headerName: "Last login",
-    type: "number",
-    width: 170,
-    editable: true,
-    align: "left",
-  },
-  {
-    field: "isBlocked",
-    headerName: "Status",
-    description: "This column has a value getter and is not sortable.",
-    sortable: true,
-    width: 160,
-  },
-  {
-    field: "actions",
-    headerName: "Actions",
-    sortable: false,
-    renderCell: (params) => {
-      console.log(params);
-      return (
-        <Box
-          component="div"
-          sx={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "0",
-          }}
-        >
-          <CustomButton
-            variant="contained"
-            color={params?.row?.isBlocked ? "success" : "error"}
-            sx={{
-              maxWidth: "30px",
-              borderRadius: "50%",
-              height: "40px",
-              padding: 0,
-            }}
-          >
-            {params?.row?.isBlocked ? (
-              <NoEncryptionIcon fontSiz="40px" />
-            ) : (
-              <HttpsIcon fontSize="40px" />
-            )}
-          </CustomButton>
-          <CustomButton variant="contained" color="error">
-            <DeleteIcon fontSize="40px" />
-          </CustomButton>
-        </Box>
-      );
-    },
-  },
-];
+import classes from "./users.module.scss";
+import { toast } from "react-toastify";
+import CustomCheckbox from "./Checkbox";
+import EnhancedTable from "./UserTable";
 
 const changeTime = (time) => {
   const newTime = format(new Date(time), "dd-MMMM, HH:mm", {
@@ -104,6 +23,8 @@ const changeTime = (time) => {
 
 export default function Users() {
   const [data, setData] = useState([]);
+  const [all, setAll] = useState(false);
+  const [valueByIds, setValueByIds] = useState([]);
 
   const getUsers = async () => {
     await axios({
@@ -120,20 +41,165 @@ export default function Users() {
           };
         });
         setData(newData);
-        console.log(res.data);
-        console.log(newData);
       })
       .catch((err) => {
         console.log(err);
       });
   };
 
+  const handleBlock = (id) => {
+    axios({
+      url: `${BASE_URL}/users`,
+      method: "PUT",
+      data: { _id: id },
+    })
+      .then((res) => {
+        getUsers();
+      })
+      .catch((err) => toast.error("Error occured!"));
+  };
+
+  const handleDelete = (id) => {
+    axios({
+      url: `${BASE_URL}/users/${id}`,
+      method: "DELETE",
+    })
+      .then((res) => {
+        getUsers();
+      })
+      .catch((err) => {
+        toast.error("Something went wrong!");
+      });
+  };
+
+  const handleChangeAllId = (e) => {
+    const values = data.map((item) => item._id);
+
+    if (e.target.checked) {
+      setValueByIds(values);
+    } else {
+      setValueByIds([]);
+    }
+
+    console.log(valueByIds);
+  };
+
+  const handleChangeOneId = (e, id) => {
+    if (e.target.checked) {
+      setValueByIds([...valueByIds, id]);
+    } else {
+      let filtered = valueByIds.filter((oneId) => oneId !== id);
+      setValueByIds(filtered);
+    }
+
+    console.log(valueByIds);
+  };
+
+  const handler = (id) => {
+    setValueByIds([...valueByIds, id]);
+  };
+
   useEffect(() => {
     getUsers();
   }, []);
+
+  const label = { inputProps: { "aria-label": "Checkbox demo" } };
   return (
-    <Box sx={{ height: 635, width: "100%" }}>
-      <DataGrid
+    <Container>
+      <Box sx={{ height: 635, width: "100%" }}>
+        <div className={classes.tableHeader}>
+          <div className={classes.selectAll}>
+            <Checkbox
+              {...label}
+              onChange={handleChangeAllId}
+              defaultChecked
+              sx={{ "& .MuiSvgIcon-root": { fontSize: 28 } }}
+            />
+          </div>
+          <div className={classes.selectAll}>
+            <h3>ID</h3>
+          </div>
+          <div className={classes.selectAll}>
+            <h3>Name</h3>
+          </div>
+          <div className={classes.selectAll}>
+            <h3>Registration time</h3>
+          </div>
+          <div className={classes.selectAll}>
+            <h3>Last entered</h3>
+          </div>
+          <div className={classes.selectAll}>
+            <h3>Status</h3>
+          </div>
+          <div className={classes.selectAll}>
+            <h3>Actions</h3>
+          </div>
+        </div>
+        {data?.map(
+          ({ _id, name, isBlocked, email, lastLog, timeStamp }, index) => {
+            return (
+              <div className={classes.tableBody} key={_id}>
+                <div className={classes.selectAll}>
+                  <CustomCheckbox
+                    handler={handler}
+                    setler={setValueByIds}
+                    _id={_id}
+                    values={valueByIds}
+                  />
+                  <Checkbox
+                    {...label}
+                    onChange={(e) => handleChangeOneId(e, _id)}
+                    defaultChecked
+                    sx={{ "& .MuiSvgIcon-root": { fontSize: 28 } }}
+                  />
+                </div>
+                <div className={classes.selectAll}>
+                  <h3>{index + 1}</h3>
+                </div>
+                <div className={classes.selectAll}>
+                  <h3>{name}</h3>
+                </div>
+                <div className={classes.selectAll}>
+                  <h3>{timeStamp}</h3>
+                </div>
+                <div className={classes.selectAll}>
+                  <h3>{lastLog}</h3>
+                </div>
+                <div className={classes.selectAll}>
+                  <h3
+                    className={
+                      isBlocked
+                        ? classes.block + " " + classes.status
+                        : classes.active + " " + classes.status
+                    }
+                  >
+                    {isBlocked ? "blocked" : "active"}
+                  </h3>
+                </div>
+                <div className={classes.selectAll + " " + classes.btnWrapper}>
+                  <Button
+                    variant="contained"
+                    color={isBlocked ? "success" : "error"}
+                    onClick={() => handleBlock(_id)}
+                    className={classes.buttons}
+                  >
+                    {isBlocked ? <NoEncryptionIcon /> : <HttpsIcon />}
+                  </Button>
+                  <Button
+                    variant="contained"
+                    color="error"
+                    onClick={() => handleDelete(_id)}
+                    className={classes.buttons}
+                  >
+                    <DeleteIcon />
+                  </Button>
+                </div>
+              </div>
+            );
+          }
+        )}
+
+        {/* <DataGrid
         rows={data}
         columns={columns}
         pageSize={9}
@@ -141,7 +207,9 @@ export default function Users() {
         checkboxSelection
         disableSelectionOnClick
         experimentalFeatures={{ newEditingApi: true }}
-      />
-    </Box>
+      /> */}
+      </Box>
+      <EnhancedTable />
+    </Container>
   );
 }
