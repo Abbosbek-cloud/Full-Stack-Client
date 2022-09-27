@@ -27,6 +27,10 @@
     "react-toastify": "^9.0.8",
     "web-vitals": "^2.1.4"
   },
+  "peerDependencies": {
+    "@babel/core": "^7.0.0",
+    "react": ">=16.8.0"
+  },
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
