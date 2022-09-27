@@ -111,22 +111,7 @@ const Signup = () => {
             sx={{ width: "100%", marginBottom: "10px", marginInline: "auto" }}
           />
         </Box>
-        <Box
-          className="wrapper"
-          style={{ width: "400px", marginInline: "auto" }}
-          sx={{ width: "100%" }}
-        >
-          <TextField
-            type="password"
-            name="re_password"
-            id="outlined-basic"
-            label="Repeat password"
-            variant="outlined"
-            value={data.re_password}
-            onChange={handleChange}
-            sx={{ width: "100%", marginBottom: "10px", marginInline: "auto" }}
-          />
-        </Box>
+
         <div
           className="wrapper"
           style={{ width: "400px", marginInline: "auto" }}

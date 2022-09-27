@@ -21,7 +21,6 @@ function Layout(props) {
   const token = localStorage.getItem("token");
   const { window, children } = props;
   const [mobileOpen, setMobileOpen] = React.useState(false);
-
   const navigate = useNavigate();
 
   const handleDrawerToggle = () => {
@@ -30,6 +29,7 @@ function Layout(props) {
 
   const logOut = () => {
     localStorage.clear();
+    navigate("/signin");
   };
 
   const toRegister = () => {

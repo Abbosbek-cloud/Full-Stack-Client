@@ -24,6 +24,13 @@ import { visuallyHidden } from "@mui/utils";
 import { Button } from "@mui/material";
 import classes from "./users.module.scss";
 import { toast } from "react-toastify";
+import axios from "axios";
+import { BASE_URL } from "../../constants/constants";
+import HttpsIcon from "@mui/icons-material/Https";
+import NoEncryptionIcon from "@mui/icons-material/NoEncryption";
+import { useState } from "react";
+import { format } from "date-fns";
+import en from "date-fns/locale/en-GB";
 
 function createData(name, calories, fat, carbs, protein) {
   return {
@@ -50,31 +57,6 @@ const rows = [
   createData("Nougat", 360, 19.0, 9, 37.0),
   createData("Oreo", 437, 18.0, 63, 4.0),
 ];
-
-const handleBlock = (id) => {
-  axios({
-    url: `${BASE_URL}/users`,
-    method: "PUT",
-    data: { _id: id },
-  })
-    .then((res) => {
-      getUsers();
-    })
-    .catch((err) => toast.error("Error occured!"));
-};
-
-const handleDelete = (id) => {
-  axios({
-    url: `${BASE_URL}/users/${id}`,
-    method: "DELETE",
-  })
-    .then((res) => {
-      getUsers();
-    })
-    .catch((err) => {
-      toast.error("Something went wrong!");
-    });
-};
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -138,9 +120,6 @@ const headCells = [
     numeric: true,
     disablePadding: false,
     label: "Actions",
-    renderCell: (params) => {
-      return <Button>Click</Button>;
-    },
   },
 ];
 
@@ -164,7 +143,7 @@ function EnhancedTableHead(props) {
           <Checkbox
             color="primary"
             indeterminate={numSelected > 0 && numSelected < rowCount}
-            checked={rowCount > 0 && numSelected === rowCount}
+            checked={rowCount > 0 && numSelected.length === rowCount}
             onChange={onSelectAllClick}
             inputProps={{
               "aria-label": "select all desserts",
@@ -198,7 +177,7 @@ function EnhancedTableHead(props) {
 }
 
 EnhancedTableHead.propTypes = {
-  numSelected: PropTypes.number.isRequired,
+  numSelected: PropTypes.array.isRequired,
   onRequestSort: PropTypes.func.isRequired,
   onSelectAllClick: PropTypes.func.isRequired,
   order: PropTypes.oneOf(["asc", "desc"]).isRequired,
@@ -206,15 +185,24 @@ EnhancedTableHead.propTypes = {
   rowCount: PropTypes.number.isRequired,
 };
 
-const EnhancedTableToolbar = (props) => {
-  const { numSelected } = props;
+const EnhancedTableToolbar = ({
+  numSelected = [],
+  handleDeleteMany,
+  handleBlockMany,
+}) => {
+  const [isBlocked, setIsblocked] = useState(false);
+
+  const block = () => {
+    handleBlockMany(numSelected);
+    setIsblocked(!isBlocked);
+  };
 
   return (
     <Toolbar
       sx={{
         pl: { sm: 2 },
         pr: { xs: 1, sm: 1 },
-        ...(numSelected > 0 && {
+        ...(numSelected.length > 0 && {
           bgcolor: (theme) =>
             alpha(
               theme.palette.primary.main,
@@ -223,14 +211,14 @@ const EnhancedTableToolbar = (props) => {
         }),
       }}
     >
-      {numSelected > 0 ? (
+      {numSelected.length > 0 ? (
         <Typography
           sx={{ flex: "1 1 100%" }}
           color="inherit"
           variant="subtitle1"
           component="div"
         >
-          {numSelected} selected
+          {numSelected.length} selected
         </Typography>
       ) : (
         <Typography
@@ -239,16 +227,29 @@ const EnhancedTableToolbar = (props) => {
           id="tableTitle"
           component="div"
         >
-          Nutrition
+          Users
         </Typography>
       )}
 
-      {numSelected > 0 ? (
-        <Tooltip title="Delete">
-          <IconButton>
-            <DeleteIcon />
-          </IconButton>
-        </Tooltip>
+      {numSelected.length > 0 ? (
+        <>
+          <Tooltip title="Delete">
+            <IconButton onClick={() => handleDeleteMany(numSelected)}>
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title={isBlocked ? "Unlock" : "Block"}>
+            {isBlocked ? (
+              <IconButton onClick={block}>
+                <NoEncryptionIcon />
+              </IconButton>
+            ) : (
+              <IconButton onClick={block}>
+                <HttpsIcon />
+              </IconButton>
+            )}
+          </Tooltip>
+        </>
       ) : (
         <Tooltip title="Filter list">
           <IconButton>
@@ -261,15 +262,105 @@ const EnhancedTableToolbar = (props) => {
 };
 
 EnhancedTableToolbar.propTypes = {
-  numSelected: PropTypes.number.isRequired,
+  numSelected: PropTypes.array.isRequired,
 };
 
 export default function EnhancedTable() {
+  const [data, setData] = React.useState([]);
   const [order, setOrder] = React.useState("asc");
   const [orderBy, setOrderBy] = React.useState("calories");
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+
+  const changeTime = (time) => {
+    const newTime = format(new Date(time), "dd-MMMM, HH:mm", {
+      locale: en,
+    });
+    return newTime;
+  };
+
+  const getUsers = async () => {
+    await axios({
+      url: `${BASE_URL}/users`,
+      method: "get",
+    })
+      .then((res) => {
+        let newData = res.data.map((user, indx) => {
+          return {
+            ...user,
+            timeStamp: changeTime(user.timeStamp),
+            lastLog: changeTime(user.lastLog),
+            id: indx + 1,
+          };
+        });
+        setData(newData);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const handleBlockMany = (users) => {
+    axios({
+      url: `${BASE_URL}/users/many`,
+      method: "put",
+      data: {
+        users: users,
+      },
+    })
+      .then((res) => {
+        getUsers();
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const handleDeleteMany = (users) => {
+    axios({
+      url: `${BASE_URL}/users/many`,
+      method: "delete",
+      data: {
+        users: users,
+      },
+    })
+      .then((res) => {
+        getUsers();
+        console.log(res);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
+
+  const blockOne = (id) => {
+    axios({
+      url: `${BASE_URL}/users`,
+      method: "PUT",
+      data: { _id: id },
+    })
+      .then((res) => {
+        getUsers();
+      })
+      .catch((err) => toast.error("Error occured!"));
+  };
+
+  const deleteOne = (id) => {
+    axios({
+      url: `${BASE_URL}/users/${id}`,
+      method: "DELETE",
+    })
+      .then((res) => {
+        getUsers();
+        console.log(res);
+      })
+      .catch((err) => {
+        // toast.error("Something went wrong!");
+        console.log(err);
+      });
+  };
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === "asc";
@@ -279,7 +370,7 @@ export default function EnhancedTable() {
 
   const handleSelectAllClick = (event) => {
     if (event.target.checked) {
-      const newSelected = rows.map((n) => n.name);
+      const newSelected = data.map((n) => n._id);
       setSelected(newSelected);
       return;
     }
@@ -319,12 +410,21 @@ export default function EnhancedTable() {
 
   // Avoid a layout jump when reaching the last page with empty rows.
   const emptyRows =
-    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - rows.length) : 0;
+    page > 0 ? Math.max(0, (1 + page) * rowsPerPage - data.length) : 0;
+
+  React.useEffect(() => {
+    getUsers();
+  }, []);
 
   return (
     <Box sx={{ width: "100%" }}>
       <Paper sx={{ width: "100%", mb: 2 }}>
-        <EnhancedTableToolbar numSelected={selected.length} />
+        <EnhancedTableToolbar
+          getUsers={getUsers}
+          handleBlockMany={handleBlockMany}
+          handleDeleteMany={handleDeleteMany}
+          numSelected={selected}
+        />
         <TableContainer>
           <Table
             sx={{ minWidth: 750 }}
@@ -332,30 +432,30 @@ export default function EnhancedTable() {
             size={"medium"}
           >
             <EnhancedTableHead
-              numSelected={selected.length}
+              numSelected={selected}
               order={order}
               orderBy={orderBy}
               onSelectAllClick={handleSelectAllClick}
               onRequestSort={handleRequestSort}
-              rowCount={rows.length}
+              rowCount={data.length}
             />
             <TableBody>
               {/* if you don't need to support IE11, you can replace the `stableSort` call with:
                  rows.slice().sort(getComparator(order, orderBy)) */}
-              {stableSort(rows, getComparator(order, orderBy))
+              {stableSort(data, getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => {
-                  const isItemSelected = isSelected(row.name);
+                  const isItemSelected = isSelected(row._id);
                   const labelId = `enhanced-table-checkbox-${index}`;
 
                   return (
                     <TableRow
                       hover
-                      onClick={(event) => handleClick(event, row.name)}
+                      onClick={(event) => handleClick(event, row._id)}
                       role="checkbox"
                       aria-checked={isItemSelected}
                       tabIndex={-1}
-                      key={row.name}
+                      key={row._id}
                       selected={isItemSelected}
                     >
                       <TableCell padding="checkbox">
@@ -375,9 +475,21 @@ export default function EnhancedTable() {
                       >
                         {row.name}
                       </TableCell>
-                      <TableCell align="right">{row.calories}</TableCell>
-                      <TableCell align="right">{row.fat}</TableCell>
-                      <TableCell align="right">{row.carbs}</TableCell>
+                      <TableCell align="right">{row.timeStamp}</TableCell>
+                      <TableCell align="right">{row.lastLog}</TableCell>
+                      <TableCell align="right">
+                        <div className={classes.selectAll}>
+                          <h3
+                            className={
+                              row.isBlocked
+                                ? classes.block + " " + classes.status
+                                : classes.active + " " + classes.status
+                            }
+                          >
+                            {row.isBlocked ? "blocked" : "active"}
+                          </h3>
+                        </div>
+                      </TableCell>
                       <TableCell align="right">
                         <div
                           className={
@@ -386,16 +498,20 @@ export default function EnhancedTable() {
                         >
                           <Button
                             variant="contained"
-                            color={isBlocked ? "success" : "error"}
-                            onClick={() => handleBlock(_id)}
+                            color={row?.isBlocked ? "success" : "error"}
+                            onClick={() => blockOne(row._id)}
                             className={classes.buttons}
                           >
-                            {isBlocked ? <NoEncryptionIcon /> : <HttpsIcon />}
+                            {row.isBlocked ? (
+                              <NoEncryptionIcon />
+                            ) : (
+                              <HttpsIcon />
+                            )}
                           </Button>
                           <Button
                             variant="contained"
                             color="error"
-                            onClick={() => handleDelete(_id)}
+                            onClick={() => deleteOne(row._id)}
                             className={classes.buttons}
                           >
                             <DeleteIcon />
@@ -420,7 +536,7 @@ export default function EnhancedTable() {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={rows.length}
+          count={data.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}

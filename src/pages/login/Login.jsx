@@ -1,8 +1,13 @@
 import React from "react";
 import { useState } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
+import axios from "axios";
+import { BASE_URL } from "../../constants/constants";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const Login = () => {
+  const navigate = useNavigate();
   const [data, setData] = useState({
     name: "",
     email: "",
@@ -17,8 +22,24 @@ const Login = () => {
     });
   };
 
-  const handleLog = () => {
-    console.log(data);
+  const login = (token) => {
+    localStorage.setItem("token", token);
+    navigate("/");
+  };
+
+  const handleLog = (e) => {
+    e.preventDefault();
+    axios({
+      url: `${BASE_URL}/users/signIn`,
+      method: "post",
+      data,
+    })
+      .then((res) => {
+        login(res.data.token);
+      })
+      .catch((err) => {
+        toast.error(err.response.data.message);
+      });
   };
 
   return (
@@ -31,7 +52,7 @@ const Login = () => {
         justifyContent: "center",
       }}
     >
-      <form>
+      <form onSubmit={handleLog}>
         <Box
           component="div"
           className="wrapper"
@@ -97,6 +118,7 @@ const Login = () => {
             variant="contained"
             sx={{ width: "100%", marginBottom: "10px", marginInline: "auto" }}
             color="success"
+            type="submit"
             onClick={handleLog}
           >
             Log In
